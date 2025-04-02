@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 class HexBoard:
     def __init__(self, size: int):
@@ -9,13 +10,14 @@ class HexBoard:
         
     def clone(self):# -> HexBoard:
         """Devuelve una copia del tablero actual"""
-        pass
+        return copy.deepcopy(self)
 
     def place_piece(self, row: int, col: int, player_id: int) -> bool:
         """Coloca una ficha si la casilla está vacía."""
         
         if self.board[row][col] == 0:
             self.board[row][col] = player_id
+            self.player_positions[player_id].add((row, col))
 
     def get_possible_moves(self) -> list:
         """Devuelve todas las casillas vacías como tuplas (fila, columna)."""
@@ -23,8 +25,6 @@ class HexBoard:
     
     def check_connection(self, player_id: int) -> bool:
         """Verifica si el jugador ha conectado sus dos lados"""
-        
-        
         
         visited = np.zeros((self.size, self.size), dtype=bool)
         x = [0 , 0, -1, -1, 1, 1]
@@ -36,7 +36,7 @@ class HexBoard:
         def search(row, col):
             visited[row][col] = True
             
-            if (player_id == 1 and row == self.size - 1) or col == self.size - 1:
+            if (player_id == 1 and row == self.size - 1) or (player_id == 2 and col == self.size - 1):
                 return True
             
             for i in range(6):
@@ -57,20 +57,24 @@ class HexBoard:
                 return True
             
         return False
+    
+    def print(self):
         
-table = HexBoard(5)
-pid = 2
-# table.place_piece(0,0,pid)
+        print()
+        
+        for i in self.board:
+            print(i)
+
+                       
+# table = HexBoard(3)
+# pid = 1
 # table.place_piece(1,0,pid)
-# table.place_piece(2,0,pid)
-# table.place_piece(3,1, pid)
-# table.place_piece(3,2, pid)
-# table.place_piece(4,2, pid)
-# table.place_piece(3,3, pid)
-# table.place_piece(2,4, pid)
+# table.place_piece(1,1,pid)
+# table.place_piece(1,2,pid)
+# table.place_piece(0,2,pid)
 # table.place_piece(2,1,pid)
+
 # for i in table.board:
 #     print(i)
-    
-print(table.get_possible_moves())
-print(table.check_connection(pid))
+
+# print(table.check_connection(pid))
