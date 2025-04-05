@@ -1,5 +1,7 @@
 import numpy as np
 import copy
+from scipy.cluster.hierarchy import DisjointSet
+from itertools import product
 
 class HexBoard:
     def __init__(self, size: int):
@@ -68,13 +70,11 @@ class HexBoard:
                        
 # table = HexBoard(3)
 # pid = 1
-# table.place_piece(1,0,pid)
-# table.place_piece(1,1,pid)
+# table.place_piece(0,0,pid)
+# table.place_piece(0,1,pid)
 # table.place_piece(1,2,pid)
 # table.place_piece(0,2,pid)
-# table.place_piece(2,1,pid)
+# table.place_piece(2,2,pid)
 
-# for i in table.board:
-#     print(i)
 
-# print(table.check_connection(pid))
+# table.print()
