@@ -9,6 +9,12 @@ class Player:
     def __init__(self, player_id: int):
         self.player_id = player_id  # Tu identificador (1 o 2)
 
+    
+    def play(self, board: HexBoard) -> tuple:                
+        _ , move = self.minmax_alfabeta(board, self.player_id, True)
+        return move     
+    
+    
     def valid(self, x, y):
             return x >= 0 and x < board.size and y >= 0 and y < board.size
     
@@ -60,8 +66,8 @@ class Player:
         if depth == 0:
             return (self.evaluate_board(board, player_id), None)                
 
-        for i in board.get_possible_moves():
-            
+        #for i in board.get_possible_moves():
+        for i in self.random_pos(board):    
             copy = board.clone()
             copy.place_piece(i[0], i[1], player_id)
             
@@ -84,18 +90,35 @@ class Player:
                 move = i 
             
         return (alfa if is_max else beta, move)
-      
     
-    
-    def play(self, board: HexBoard) -> tuple:
+    def random_pos(self, board: HexBoard):
+        possible_mov_length = board.size**2 - len(board.player_positions[1]) - len(board.player_positions[2])
+        
+        if possible_mov_length > 5:
+        
+            count = np.exp(10/possible_mov_length)
+            old_moves = set()
+            while count > 0:
+                
+                while True:
+                    x = np.random.randint(0,high=board.size)
+                    y = np.random.randint(0,high=board.size)
                     
-        _ , move = self.minmax_alfabeta(board, self.player_id, True)
-        return move     
+                    if  board.board[x][y] == 0 and (x,y) not in old_moves:
+                        break
+                    
+                count-=1
+                old_moves.add((x,y))
+                yield (x,y)
+            
+        else:
+            for i in board.get_possible_moves():
+                yield i
         
         
 P1 = Player(1)
 P2 = Player(2)
-board = HexBoard(6)
+board = HexBoard(20)
 board.print()
 
 i = 0
@@ -104,7 +127,8 @@ while True:
     P = P1 if i % 2 == 0 else P2
     
     print(f"\nJugador {P.player_id}")
-    move = input("> ").split(' ') if i % 2 == 0 else P.play(board)
+    move = P.play(board)
+    print(move)
     board.place_piece(int(move[0]), int(move[1]), P.player_id)
     board.print()
     
