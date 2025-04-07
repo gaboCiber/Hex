@@ -205,6 +205,51 @@ class CrazyPlayer(Player):
             for i in board.get_possible_moves():
                 yield i
         
+class MonteCarloPlayer(Player):
+    def __init__(self, player_id):
+        super().__init__(player_id)
+        
+    def play(self, board):
+        
+        best_move = (-math.inf, None)
+        possible_moves = board.get_possible_moves()
+        
+        for i in possible_moves:
+            n = 0
+            move = None
+            
+            copy = board.clone()
+            copy.place_piece(move[0], move[1], self.player_id)
+            
+            if board.check_connection(self.player_id):
+                return i
+            
+            for _ in range(math.sqrt(len(possible_moves) - 1)):
+                
+                while True:
+                    move = possible_moves[np.random.randint(0, len(possible_moves) - 1)]
+                    
+                    if move != i:
+                        break
+                
+                n += self.monte_carlo_search(copy, 3 - self.player_id)
+
+            if n > best_move[0]:
+                best_move = (n, move)
+                
+        return best_move[1]    
     
+    def monte_carlo_search(self, board: HexBoard, player_id: int):
+        
+        copy = board.clone()
+        possible_moves = copy.get_possible_moves()
+        
+        move = possible_moves[np.random.randint(0, len(possible_moves))]
+        copy.place_piece(move[0], move[1], player_id)
     
+        if board.check_connection(player_id):
+            return 1 if player_id == self.player_id else 0
+    
+        return self.monte_carlo_search(copy, 3 - player_id)
+        
     
