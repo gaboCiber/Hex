@@ -5,6 +5,7 @@ from scipy.cluster.hierarchy import DisjointSet
 from itertools import product
 import networkx as nx
 from copy import deepcopy
+import random
 
 class Player:
     def __init__(self, player_id: int):
@@ -207,8 +208,9 @@ class CrazyPlayer(Player):
                 yield i
         
 class MonteCarloPlayer(Player):
-    def __init__(self, player_id):
+    def __init__(self, player_id, num_simulation=100):
         super().__init__(player_id)
+        self.num_simulation = num_simulation
         
     def play(self, board):
         
@@ -216,19 +218,20 @@ class MonteCarloPlayer(Player):
         possible_moves = board.get_possible_moves()
         
         for i in range(len(possible_moves)):
-            move = None
+            move = possible_moves[i]
             
             copy = board.clone()
             copy.place_piece(move[0], move[1], self.player_id)
             
-            if board.check_connection(self.player_id):
-                return possible_moves[i]
+            if copy.check_connection(self.player_id):
+                return move
             
             n = 0
-            possible_moves_copy = deepcopy(possible_moves).pop(i)
+            possible_moves_copy = deepcopy(possible_moves)
+            possible_moves_copy.pop(i)
             
-            for _ in range(math.sqrt(len(possible_moves) - 1)):                
-                n += self.monte_carlo_search(copy, 3 - self.player_id, possible_moves_copy)
+            for _ in range(int(math.sqrt(len(possible_moves) - 1))):                
+                n += self.monte_carlo_search(deepcopy(copy), 3 - self.player_id, deepcopy(possible_moves_copy))
 
             if n > best_move[0]:
                 best_move = (n, move)
@@ -237,13 +240,11 @@ class MonteCarloPlayer(Player):
     
     def monte_carlo_search(self, board: HexBoard, player_id: int, possible_moves: list):
         
-        copy = board.clone()        
         move = possible_moves.pop(np.random.randint(0, len(possible_moves)))
-        copy.place_piece(move[0], move[1], player_id)
-    
-        if board.check_connection(player_id):
+        board.place_piece(move[0], move[1], player_id)
+        
+        if len(possible_moves) == 0 or board.check_connection(player_id):
             return 1 if player_id == self.player_id else 0
     
-        return self.monte_carlo_search(copy, 3 - player_id, possible_moves)
+        return self.monte_carlo_search(board, 3 - player_id, possible_moves)
         
-    
