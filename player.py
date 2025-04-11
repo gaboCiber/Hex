@@ -1,3 +1,4 @@
+from collections import deque
 import scipy
 from board import HexBoard
 import math
@@ -490,8 +491,8 @@ class RehabPlayer(Player):
     def evaluate_board(self, board: HexBoard, player_id: int) -> int:      
         return (3 * self.shortest_path(board, player_id) + 
                 10 * self.center_plays(board, player_id) + 
-                5 * self.break_rival_bridges(board, player_id) +
-                6 * self.rival_influence(board, player_id)
+                3 * self.break_rival_bridges(board, player_id) +
+                6 * self.rival_influence(board, player_id) 
                 )
     
     def valid(self,board, x, y):
@@ -503,7 +504,7 @@ class RehabPlayer(Player):
             for coor_b in B:
                 m = min(m, math.sqrt( (coor_a[0] - coor_b[0])**2 + (coor_a[1] - coor_b[1])**2))
         return m
-      
+    
     def rival_influence(self, board: HexBoard, player_id: int) -> int:
         c = 0
         
@@ -593,39 +594,19 @@ class RehabPlayer(Player):
                     
         return -nx.shortest_path_length(G, -1, board.size, "weight") 
 
-    def softmax(self, x, temperature=1.0):
-        x = np.array(x)
-        x = -x  # porque los primeros (más cerca al centro) deben tener mayor probabilidad
-        e_x = np.exp(x / temperature)
-        return e_x / e_x.sum()
-
     def next_moves(self, board: HexBoard):
-        moves = board.get_possible_moves()
+        possible_mov = board.get_possible_moves()
         center = board.size // 2
 
         # Ordenamos por distancia al centro
-        moves.sort(key=lambda m: (m[0] - center)**2 + (m[1] - center)**2)
-
-        # # Generamos pesos softmax con temperatura baja (más sesgo hacia el centro)
-        # probs = self.softmax(moves, temperature=0.5)
-
-        # sampled_indices = np.random.choice(len(moves), size=len(moves), replace=False, p=probs)
-
-        for i in moves:
-            yield i
-
-    def _next_moves(self, board: HexBoard):
-        possible_mov = board.get_possible_moves()
-        
-        if len(possible_mov) > 7:
-        
-            count = math.sqrt(len(possible_mov)) + board.size
-            while count > 0 and len(possible_mov) > 0:
-                count -= 1
-                yield possible_mov.pop(np.random.randint(0, high=len(possible_mov)))
+        possible_mov.sort(key=lambda m: (m[0] - center)**2 + (m[1] - center)**2)
+            
+        if len(possible_mov) > 7:        
+            for _ in range(int(math.sqrt(len(possible_mov)) + board.size)):            
+                yield possible_mov.pop(int(np.random.exponential(2)) % len(possible_mov))
             
         else:
-            for i in board.get_possible_moves():
+            for i in possible_mov:
                 yield i
 
     def calculate_depth(self, board: HexBoard):
