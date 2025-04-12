@@ -6,18 +6,25 @@ from scipy.cluster.hierarchy import DisjointSet
 import networkx as nx
 from copy import deepcopy
 import concurrent.futures
+import time
+from A_Star import A_star
 
 class Player:
     def __init__(self, player_id: int):
         self.player_id = player_id  # Tu identificador (1 o 2)
-
+        self.time_limit = None
+        
     def play(self, board: HexBoard) -> tuple:
         raise NotImplementedError("¡Implementa este método!")
 
 class ThePlayer(Player):
     def __init__(self, player_id: int):
         self.player_id = player_id  # Identificador del jugador (1 o 2)
-
+    
+    def chech_time(self):
+        if self.time_limit and time.time() - self.start_time >= self.time_limit:
+            raise concurrent.futures.TimeoutError()
+    
     def play(self, board: HexBoard, time_limit: float = None) -> tuple:
         # Decide la jugada a realizar según el tiempo disponible
         if time_limit is None:
@@ -27,6 +34,8 @@ class ThePlayer(Player):
         
         # Si hay un límite de tiempo, ejecuta la búsqueda en otro hilo y controla el tiempo
         with concurrent.futures.ThreadPoolExecutor() as executor:
+            self.start_time = time.time()
+            self.time_limit = time_limit
             future = executor.submit(self.max_alfabeta, board, self.player_id, self.calculate_depth(board))
             try:
                 _, move = future.result(timeout=time_limit)
@@ -36,6 +45,8 @@ class ThePlayer(Player):
                 return self.random_move  # Devuelve una jugada random si se acaba el tiempo
 
     def max_alfabeta(self, board, player_id, depth, alfa=-math.inf, beta=math.inf):
+        self.chech_time()
+        
         # Función de maximización con poda alfa-beta
         if depth == 0:
             return (self.evaluate_board(board, player_id), None)
@@ -65,6 +76,9 @@ class ThePlayer(Player):
         return v, move
 
     def min_alfabeta(self, board, player_id, depth, alfa=-math.inf, beta=math.inf):
+        
+        self.chech_time()
+        
         # Función de minimización con poda alfa-beta
         if depth == 0:
             return (self.evaluate_board(board, player_id), None)
@@ -93,6 +107,9 @@ class ThePlayer(Player):
         return v, move
 
     def evaluate_board(self, board: HexBoard, player_id: int) -> int:
+        
+        self.chech_time()
+        
         # Función de evaluación del tablero combinando varios factores heurísticos
         return (
             3 * self.shortest_path(board, player_id) +
@@ -102,6 +119,8 @@ class ThePlayer(Player):
         )
 
     def valid(self, board, x, y):
+        self.chech_time()
+        
         # Verifica si una coordenada está dentro de los límites del tablero
         return 0 <= x < board.size and 0 <= y < board.size
 
@@ -201,9 +220,13 @@ class ThePlayer(Player):
             G.add_edge(-1, i, weight=min(S))
             G.add_edge(board.size, i, weight=(board.size - max(S) - 1))
 
+        
+        
         return -nx.shortest_path_length(G, -1, board.size, "weight")
 
     def next_moves(self, board):
+        self.chech_time()
+        
         # Genera los movimientos posibles ordenados por cercanía al centro
         possible_mov = board.get_possible_moves()
         center = board.size // 2
